@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07080b" />
+  <meta name="description" content="An immersive read-only photo universe powered by Firebase Firestore." />
+  <title>Photo Universe</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07080b;
+      --text: rgba(255,255,255,.94);
+      --muted: rgba(255,255,255,.48);
+      --line: rgba(255,255,255,.10);
+      --glass: rgba(13,15,20,.58);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { width: 100%; height: 100%; margin: 0; }
+
+    body {
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(255,255,255,.045), transparent 32%),
+        radial-gradient(circle at 15% 15%, rgba(112,141,255,.06), transparent 28%),
+        radial-gradient(circle at 90% 84%, rgba(255,124,176,.035), transparent 26%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      cursor: grab;
+    }
+
+    body.dragging { cursor: grabbing; }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .vignette,
+    .grain,
+    .top-glow,
+    .bottom-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .vignette {
+      background:
+        radial-gradient(circle at center, transparent 36%, rgba(0,0,0,.16) 72%, rgba(0,0,0,.70) 100%),
+        linear-gradient(180deg, rgba(0,0,0,.16), transparent 22%, transparent 78%, rgba(0,0,0,.28));
+      z-index: 3;
+    }
+
+    .grain {
+      z-index: 4;
+      opacity: .075;
+      mix-blend-mode: screen;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+    }
+
+    .top-glow {
+      inset: -20% -20% auto -20%;
+      height: 38%;
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.08), transparent 66%);
+      filter: blur(28px);
+      z-index: 1;
+    }
+
+    .bottom-glow {
+      inset: auto -20% -25% -20%;
+      height: 35%;
+      background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,.055), transparent 70%);
+      filter: blur(30px);
+      z-index: 1;
+    }
+
+    .ui {
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 26px 28px max(24px, env(safe-area-inset-bottom)) 28px;
+    }
+
+    .brand {
+      pointer-events: auto;
+      width: fit-content;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 10px 14px 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(8,10,14,.34);
+      backdrop-filter: blur(18px) saturate(130%);
+      -webkit-backdrop-filter: blur(18px) saturate(130%);
+      box-shadow: 0 10px 40px rgba(0,0,0,.14);
+    }
+
+    .brand-mark {
+      width: 23px;
+      height: 23px;
+      border-radius: 50%;
+      position: relative;
+      background: radial-gradient(circle at 35% 30%, #fff, rgba(255,255,255,.55) 18%, rgba(255,255,255,.12) 42%, transparent 70%);
+      box-shadow: inset 0 0 12px rgba(255,255,255,.28), 0 0 18px rgba(255,255,255,.08);
+    }
+
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border: 1px solid rgba(255,255,255,.42);
+      border-radius: 50%;
+    }
+
+    .brand-name {
+      font-size: 13px;
+      line-height: 1;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.82);
+      white-space: nowrap;
+    }
+
+    .status {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      translate: -50% -50%;
+      display: grid;
+      place-items: center;
+      gap: 14px;
+      pointer-events: none;
+      color: rgba(255,255,255,.62);
+      text-align: center;
+      transition: opacity .5s ease, transform .7s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .status.hidden {
+      opacity: 0;
+      transform: scale(.96);
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.16);
+      border-top-color: rgba(255,255,255,.78);
+      animation: spin 1.05s linear infinite;
+    }
+
+    @keyframes spin { to { rotate: 360deg; } }
+
+    .hint {
+      position: fixed;
+      left: 50%;
+      bottom: 34px;
+      translate: -50% 0;
+      color: rgba(255,255,255,.40);
+      font-size: 11px;
+      letter-spacing: .12em;
+      white-space: nowrap;
+      text-transform: uppercase;
+      transition: opacity .6s ease, transform .6s ease;
+    }
+
+    .hint.fade {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .counter {
+      position: fixed;
+      right: 28px;
+      top: 32px;
+      color: rgba(255,255,255,.34);
+      font-size: 10px;
+      letter-spacing: .16em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .info {
+      position: absolute;
+      left: 28px;
+      bottom: 28px;
+      max-width: min(560px, calc(100vw - 56px));
+      padding: 16px 18px;
+      border: 1px solid transparent;
+      border-radius: 18px;
+      background: transparent;
+      opacity: 0;
+      translate: 0 9px;
+      transition: opacity .42s ease, translate .42s cubic-bezier(.2,.8,.2,1), background .42s ease, border-color .42s ease;
+      pointer-events: none;
+    }
+
+    .info.visible {
+      opacity: 1;
+      translate: 0 0;
+      background: rgba(10,12,17,.34);
+      border-color: rgba(255,255,255,.09);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .info-meta {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: rgba(255,255,255,.45);
+      font-size: 10px;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,.35); }
+
+    .info-title {
+      margin-top: 7px;
+      font-size: 17px;
+      line-height: 1.35;
+      letter-spacing: -.02em;
+      color: rgba(255,255,255,.88);
+    }
+
+    .info-sub {
+      margin-top: 8px;
+      color: rgba(255,255,255,.44);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+
+    .error {
+      display: none;
+      max-width: min(580px, calc(100vw - 40px));
+      padding: 22px 24px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 20px;
+      background: rgba(15,16,20,.72);
+      box-shadow: 0 24px 80px rgba(0,0,0,.28);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      text-align: left;
+    }
+
+    .error.show { display: block; }
+    .error-title { font-size: 15px; margin-bottom: 8px; }
+    .error-copy { color: rgba(255,255,255,.5); font-size: 12px; line-height: 1.7; }
+
+    @media (max-width: 700px) {
+      .ui { padding: 16px 16px 22px; }
+      .counter { right: 16px; top: 22px; }
+      .brand { padding: 9px 12px 9px 9px; }
+      .brand-name { font-size: 11px; }
+      .hint { bottom: 21px; font-size: 9px; letter-spacing: .08em; }
+      .info { left: 16px; bottom: 56px; max-width: calc(100vw - 32px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div class="top-glow"></div>
+  <div class="bottom-glow"></div>
+  <div class="vignette"></div>
+  <div class="grain"></div>
+
+  <div class="ui">
+    <div>
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div class="brand-name">Photo Universe</div>
+      </div>
+    </div>
+
+    <div id="status" class="status">
+      <div class="spinner"></div>
+      <div>正在进入记忆宇宙</div>
+    </div>
+
+    <div id="hint" class="hint">拖动旋转 · 滚轮环游 · 点击照片</div>
+    <div id="counter" class="counter">— / —</div>
+
+    <div id="info" class="info">
+      <div class="info-meta">
+        <span id="infoDate"></span>
+        <span id="infoDot" class="dot"></span>
+        <span id="infoLocation"></span>
+      </div>
+      <div id="infoTitle" class="info-title"></div>
+      <div id="infoSub" class="info-sub"></div>
+    </div>
+
+    <div id="error" class="error">
+      <div class="error-title">暂时无法读取照片宇宙</div>
+      <div id="errorCopy" class="error-copy"></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDIeaAVvLD9d4L9QAvbTLCZ6N0x0-U1Nwg",
+      authDomain: "friendship-k-h.firebaseapp.com",
+      projectId: "friendship-k-h",
+      storageBucket: "friendship-k-h.firebasestorage.app",
+      messagingSenderId: "791706318386",
+      appId: "1:791706318386:web:5d69e67fb55716ba8e2e2b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x07080b);
+    scene.fog = new THREE.FogExp2(0x07080b, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 120);
+    camera.position.set(0, 0, 0.1);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.02;
+    document.getElementById("app").appendChild(renderer.domElement);
+
+    const universe = new THREE.Group();
+    scene.add(universe);
+
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.setCrossOrigin("anonymous");
+
+    const status = document.getElementById("status");
+    const hint = document.getElementById("hint");
+    const counter = document.getElementById("counter");
+    const info = document.getElementById("info");
+    const infoDate = document.getElementById("infoDate");
+    const infoLocation = document.getElementById("infoLocation");
+    const infoTitle = document.getElementById("infoTitle");
+    const infoSub = document.getElementById("infoSub");
+    const errorBox = document.getElementById("error");
+    const errorCopy = document.getElementById("errorCopy");
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const photos = [];
+    const hitTargets = [];
+
+    let rotationX = 0;
+    let rotationY = 0;
+    let velocityX = 0.00018;
+    let velocityY = 0.00042;
+    let selected = null;
+    let selectedDistance = Infinity;
+    let pointerDown = false;
+    let moved = false;
+    let lastX = 0;
+    let lastY = 0;
+    let lastTime = performance.now();
+    let hasInteracted = false;
+
+    const clock = new THREE.Clock();
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const lerp = (a, b, t) => a + (b - a) * t;
+
+    function fibonacciPoint(index, total, radius) {
+      const phi = Math.acos(1 - (2 * (index + 0.5)) / total);
+      const theta = Math.PI * (3 - Math.sqrt(5)) * index;
+      return new THREE.Vector3(
+        radius * Math.sin(phi) * Math.cos(theta),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta)
+      );
+    }
+
+    function normalizeRecord(id, data) {
+      const image = data.image || data.imageUrl || data.url || data.photo;
+      if (typeof image !== "string" || !image.trim()) return null;
+
+      const timestamp = typeof data.timestamp === "number"
+        ? data.timestamp
+        : (data.timestamp?.toMillis?.() || Date.parse(data.timestamp || "") || 0);
+
+      return {
+        id,
+        image: image.trim(),
+        text: typeof data.text === "string" ? data.text.trim() : "",
+        location: typeof data.location === "string" ? data.location.trim() : "",
+        mood: typeof data.mood === "string" ? data.mood.trim() : "",
+        lang: typeof data.lang === "string" ? data.lang.trim() : "",
+        timestamp
+      };
+    }
+
+    async function loadMemories() {
+      const snapshot = await getDocs(collection(db, "memories"));
+      return snapshot.docs
+        .map(doc => normalizeRecord(doc.id, doc.data()))
+        .filter(Boolean)
+        .sort((a, b) => b.timestamp - a.timestamp);
+    }
+
+    function addStars(count = 120) {
+      const geometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        const p = fibonacciPoint(i, count, 52 + Math.random() * 18);
+        positions[i * 3] = p.x;
+        positions[i * 3 + 1] = p.y;
+        positions[i * 3 + 2] = p.z;
+      }
+      geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      const material = new THREE.PointsMaterial({
+        size: 0.04,
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.22,
+        depthWrite: false
+      });
+      scene.add(new THREE.Points(geometry, material));
+    }
+
+    function makeGlowTexture() {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 256;
+      const ctx = canvas.getContext("2d");
+      const gradient = ctx.createRadialGradient(128, 128, 5, 128, 128, 128);
+      gradient.addColorStop(0, "rgba(255,255,255,.32)");
+      gradient.addColorStop(.25, "rgba(255,255,255,.12)");
+      gradient.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 256, 256);
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    function addAmbientOrb() {
+      const mat = new THREE.SpriteMaterial({
+        map: makeGlowTexture(),
+        transparent: true,
+        opacity: 0.12,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(28, 28, 1);
+      sprite.position.set(0, 0, -26);
+      scene.add(sprite);
+    }
+
+    function createPhoto(record, point, index) {
+      const material = new THREE.SpriteMaterial({
+        transparent: true,
+        opacity: 0.78,
+        depthWrite: false,
+        depthTest: true,
+        color: new THREE.Color(0xffffff)
+      });
+
+      const sprite = new THREE.Sprite(material);
+      const baseScale = 2.15 + (index % 5) * 0.07;
+      sprite.scale.set(baseScale * 1.36, baseScale, 1);
+      sprite.position.copy(point);
+      sprite.renderOrder = index;
+      sprite.userData.record = record;
+      sprite.userData.baseScale = baseScale;
+      sprite.userData.index = index;
+
+      material.map = textureLoader.load(
+        record.image,
+        texture => {
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+          const ratio = texture.image.width / Math.max(1, texture.image.height);
+          const safeRatio = clamp(ratio || 1.36, 0.55, 2.2);
+          sprite.scale.set(baseScale * safeRatio, baseScale, 1);
+          material.needsUpdate = true;
+        },
+        undefined,
+        () => {
+          material.opacity = 0;
+        }
+      );
+
+      universe.add(sprite);
+      hitTargets.push(sprite);
+      photos.push(sprite);
+      return sprite;
+    }
+
+    function populate(records) {
+      const count = records.length;
+      const radius = clamp(14 + Math.sqrt(count) * 0.55, 15, 25);
+      let working = records;
+
+      if (count > 0 && count < 24) {
+        const repeats = Math.ceil(48 / count);
+        working = Array.from({ length: repeats }, (_, copy) => records.map((record, i) => ({
+          ...record,
+          id: `${record.id}-${copy}-${i}`
+        }))).flat();
+      }
+
+      working.forEach((record, index) => {
+        const point = fibonacciPoint(index, working.length, radius + ((index % 7) - 3) * 0.22);
+        createPhoto(record, point, index);
+      });
+
+      counter.textContent = `${records.length.toString().padStart(2, "0")} MEMORIES`;
+    }
+
+    function formatDate(timestamp) {
+      if (!timestamp) return "";
+      const date = new Date(timestamp);
+      if (Number.isNaN(date.getTime())) return "";
+      return new Intl.DateTimeFormat("zh-CN", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      }).format(date);
+    }
+
+    function showInfo(sprite) {
+      const record = sprite.userData.record;
+      if (!record) return;
+      selected = sprite;
+      selectedDistance = camera.position.distanceTo(sprite.getWorldPosition(new THREE.Vector3()));
+      infoDate.textContent = formatDate(record.timestamp);
+      infoLocation.textContent = record.location || record.mood || "Memory";
+      infoDot.style.display = record.location || record.mood ? "block" : "none";
+      infoTitle.textContent = record.text || "Untitled memory";
+      const meta = [record.lang, record.mood].filter(Boolean).join(" · ");
+      infoSub.textContent = meta || "A moment from your memory universe";
+      info.classList.add("visible");
+    }
+
+    function clearSelection() {
+      selected = null;
+      info.classList.remove("visible");
+    }
+
+    function updateSelection() {
+      let closest = null;
+      let best = Infinity;
+      const forward = new THREE.Vector3(0, 0, -1);
+      camera.getWorldDirection(forward);
+
+      for (const sprite of photos) {
+        const world = sprite.getWorldPosition(new THREE.Vector3());
+        const toSprite = world.clone().normalize();
+        const facing = forward.dot(toSprite);
+        const distance = world.length();
+        sprite.material.opacity = lerp(sprite.material.opacity, clamp(0.19 + (facing + 1) * 0.31, 0.08, 0.92), 0.08);
+
+        const score = facing * 2.6 - distance * 0.01;
+        if (facing > 0.94 && score > best) continue;
+        if (facing > 0.915 && score > best) {
+          closest = sprite;
+          best = score;
+        } else if (facing > 0.945 && score > best) {
+          closest = sprite;
+          best = score;
+        }
+      }
+
+      if (!selected && closest) showInfo(closest);
+    }
+
+    function updateCameraImmersion() {
+      const pulse = Math.sin(clock.elapsedTime * 0.35) * 0.35;
+      camera.fov = lerp(camera.fov, 68 + pulse, 0.035);
+      camera.updateProjectionMatrix();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+
+      rotationY += velocityY * dt * 60;
+      rotationX += velocityX * dt * 60;
+      rotationX = clamp(rotationX, -1.18, 1.18);
+
+      universe.rotation.x = rotationX;
+      universe.rotation.y = rotationY;
+      universe.rotation.z = Math.sin(clock.elapsedTime * 0.16) * 0.014;
+
+      velocityY *= Math.pow(0.92, dt * 60);
+      velocityX *= Math.pow(0.90, dt * 60);
+      velocityY = lerp(velocityY, 0.00042, 0.012);
+      velocityX = lerp(velocityX, 0, 0.018);
+
+      updateCameraImmersion();
+      renderer.render(scene, camera);
+    }
+
+    function pickPhoto(clientX, clientY) {
+      pointer.x = (clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(hitTargets, false);
+      return hits.length ? hits[0].object : null;
+    }
+
+    renderer.domElement.addEventListener("pointerdown", (event) => {
+      pointerDown = true;
+      moved = false;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      document.body.classList.add("dragging");
+      renderer.domElement.setPointerCapture?.(event.pointerId);
+      if (!hasInteracted) {
+        hasInteracted = true;
+        hint.classList.add("fade");
+      }
+    });
+
+    renderer.domElement.addEventListener("pointermove", (event) => {
+      if (!pointerDown) return;
+      const dx = event.clientX - lastX;
+      const dy = event.clientY - lastY;
+      if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
+
+      velocityY = dx * 0.00065;
+      velocityX = dy * 0.00035;
+      rotationY += dx * 0.0024;
+      rotationX = clamp(rotationX + dy * 0.0018, -1.18, 1.18);
+      lastX = event.clientX;
+      lastY = event.clientY;
+    });
+
+    renderer.domElement.addEventListener("pointerup", (event) => {
+      pointerDown = false;
+      document.body.classList.remove("dragging");
+      renderer.domElement.releasePointerCapture?.(event.pointerId);
+
+      if (!moved) {
+        const sprite = pickPhoto(event.clientX, event.clientY);
+        if (sprite) showInfo(sprite);
+        else clearSelection();
+      }
+    });
+
+    renderer.domElement.addEventListener("pointercancel", () => {
+      pointerDown = false;
+      document.body.classList.remove("dragging");
+    });
+
+    renderer.domElement.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      rotationY += event.deltaY * 0.00055;
+      velocityY += event.deltaY * 0.000018;
+      velocityY = clamp(velocityY, -0.025, 0.025);
+      if (!hasInteracted) {
+        hasInteracted = true;
+        hint.classList.add("fade");
+      }
+    }, { passive: false });
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    });
+
+    async function init() {
+      try {
+        addStars();
+        addAmbientOrb();
+
+        const memories = await loadMemories();
+        if (!memories.length) {
+          throw new Error("Firestore 的 memories 集合中没有可读取的照片记录。");
+        }
+
+        populate(memories);
+        status.classList.add("hidden");
+        setTimeout(() => status.remove(), 650);
+        animate();
+
+        // Keep the selected memory panel gently synchronized with the sphere's motion.
+        setInterval(() => {
+          if (selected && selected.parent) {
+            const world = selected.getWorldPosition(new THREE.Vector3());
+            const distance = camera.position.distanceTo(world);
+            if (distance > 22 || world.z > 4) {
+              clearSelection();
+            }
+          }
+        }, 650);
+      } catch (error) {
+        console.error(error);
+        status.classList.add("hidden");
+        errorBox.classList.add("show");
+        errorCopy.textContent = `${error?.message || "读取 Firebase 数据失败。"} 请检查 Firestore 的读取规则，以及 memories 集合中的 image 字段。`;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
