@@ -7,121 +7,42 @@
 <meta name="description" content="Photo Universe — an immersive 3D galaxy of memories.">
 <title>Photo Universe</title>
 <style>
-:root{color-scheme:dark;--bg:#02030a;--fg:rgba(255,255,255,.92)}*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#02030a}body{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;color:var(--fg);cursor:grab;user-select:none;-webkit-font-smoothing:antialiased}body.dragging{cursor:grabbing}canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}.ui{position:fixed;inset:0;z-index:5;pointer-events:none;padding:24px 26px;display:flex;justify-content:space-between;align-items:flex-start}.brand{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:9px 13px 9px 10px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(5,7,15,.28);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.mark{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#fff 0 10%,rgba(255,255,255,.55) 23%,rgba(255,255,255,.08) 54%,transparent 72%);box-shadow:0 0 18px rgba(160,190,255,.16)}.brand span{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.72)}.count{font-size:10px;letter-spacing:.18em;color:rgba(255,255,255,.28);padding:10px 0}.hint{position:fixed;left:50%;bottom:24px;translate:-50% 0;color:rgba(255,255,255,.32);font-size:10px;letter-spacing:.13em;text-transform:uppercase;transition:opacity .5s,transform .5s;white-space:nowrap}.hint.hidden{opacity:0;transform:translateY(7px)}.loading{position:fixed;left:50%;top:50%;translate:-50% -50%;z-index:6;display:grid;place-items:center;gap:14px;color:rgba(255,255,255,.58);font-size:12px;letter-spacing:.08em}.loading.hidden{opacity:0;pointer-events:none;transition:opacity .45s}.spinner{width:28px;height:28px;border:1px solid rgba(255,255,255,.14);border-top-color:rgba(255,255,255,.82);border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.error{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;display:none;max-width:min(580px,calc(100vw - 40px));padding:22px 24px;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:rgba(8,10,18,.76);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 20px 70px rgba(0,0,0,.4)}.error.show{display:block}.error h2{font-size:15px;font-weight:500;margin:0 0 8px}.error p{font-size:12px;line-height:1.7;color:rgba(255,255,255,.5);margin:0}@media(max-width:700px){.ui{padding:16px}.brand{padding:8px 11px 8px 9px}.brand span{font-size:10px}.count{font-size:9px}.hint{bottom:18px;font-size:8px}}
+:root{color-scheme:dark;--bg:#02030a;--fg:rgba(255,255,255,.92)}*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#02030a}body{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;color:var(--fg);cursor:grab;user-select:none;-webkit-font-smoothing:antialiased}body.dragging{cursor:grabbing}canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}.ui{position:fixed;inset:0;z-index:5;pointer-events:none;padding:24px 26px;display:flex;justify-content:space-between;align-items:flex-start}.brand{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:9px 13px 9px 10px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(5,7,15,.28);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.mark{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#fff 0 10%,rgba(255,255,255,.55) 23%,rgba(255,255,255,.08) 54%,transparent 72%);box-shadow:0 0 18px rgba(160,190,255,.16)}.brand span{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.72)}.count{font-size:10px;letter-spacing:.18em;color:rgba(255,255,255,.28);padding:10px 0}.hint{position:fixed;left:50%;bottom:24px;translate:-50% 0;color:rgba(255,255,255,.32);font-size:10px;letter-spacing:.13em;text-transform:uppercase;transition:opacity .5s,transform .5s;white-space:nowrap}.hint.hidden{opacity:0;transform:translateY(7px)}.loading{position:fixed;left:50%;top:50%;translate:-50% -50%;z-index:6;display:grid;place-items:center;gap:14px;color:rgba(255,255,255,.58);font-size:12px;letter-spacing:.08em}.loading.hidden{opacity:0;pointer-events:none;transition:opacity .45s}.spinner{width:28px;height:28px;border:1px solid rgba(255,255,255,.14);border-top-color:rgba(255,255,255,.82);border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.error{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;display:none;max-width:min(580px,calc(100vw - 40px));padding:22px 24px;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:rgba(8,10,18,.76);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 20px 70px rgba(0,0,0,.4)}.error.show{display:block}.error h2{font-size:15px;font-weight:500;margin:0 0 8px}.error p{font-size:12px;line-height:1.7;color:rgba(255,255,255,.5);margin:0}.zoomHint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);opacity:0;z-index:7;pointer-events:none;padding:9px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(4,6,14,.45);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.52);transition:opacity .3s,transform .3s}.zoomHint.show{opacity:1;transform:translate(-50%,-50%) scale(1)}@media(max-width:700px){.ui{padding:16px}.brand{padding:8px 11px 8px 9px}.brand span{font-size:10px}.count{font-size:9px}.hint{bottom:18px;font-size:8px}}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <div class="ui"><div class="brand"><div class="mark"></div><span>Photo Universe</span></div><div id="count" class="count">—</div></div>
 <div id="loading" class="loading"><div class="spinner"></div><div>ENTERING THE UNIVERSE</div></div>
-<div id="hint" class="hint">DRAG TO EXPLORE · SCROLL TO TRAVEL</div>
+<div id="hint" class="hint">DRAG TO EXPLORE · SCROLL TO TRAVEL · CLICK TO ZOOM</div>
+<div id="zoomHint" class="zoomHint">CLICK AGAIN TO RETURN</div>
 <div id="error" class="error"><h2>Unable to load the photo universe</h2><p id="errorText"></p></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import * as THREE from "three";
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import {getFirestore,collection,getDocs} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-
 const firebaseConfig={apiKey:"AIzaSyDIeaAVvLD9d4L9QAvbTLCZ6N0x0-U1Nwg",authDomain:"friendship-k-h.firebaseapp.com",projectId:"friendship-k-h",storageBucket:"friendship-k-h.firebasestorage.app",messagingSenderId:"791706318386",appId:"1:791706318386:web:5d69e67fb55716ba8e2e2b"};
 const db=getFirestore(initializeApp(firebaseConfig));
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x02030a);
-scene.fog=new THREE.FogExp2(0x02030a,.004);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,180);
-camera.position.set(0,0,0);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;document.getElementById("app").appendChild(renderer.domElement);
-
-const universe=new THREE.Group();scene.add(universe);
-const stars=new THREE.Group();scene.add(stars);
-const textureLoader=new THREE.TextureLoader();textureLoader.setCrossOrigin("anonymous");
-const photos=[];
-const raycaster=new THREE.Raycaster();const pointer=new THREE.Vector2();
-const clock=new THREE.Clock();
-const countEl=document.getElementById("count");const loading=document.getElementById("loading");const hint=document.getElementById("hint");
-let yaw=0,pitch=0,yawVelocity=.00015,pitchVelocity=0,dragging=false,moved=false,lastX=0,lastY=0,hasInteracted=false,active=null;
-
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x02030a);scene.fog=new THREE.FogExp2(0x02030a,.004);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,180);camera.position.set(0,0,0);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;document.getElementById("app").appendChild(renderer.domElement);
+const universe=new THREE.Group();scene.add(universe);const stars=new THREE.Group();scene.add(stars);const textureLoader=new THREE.TextureLoader();textureLoader.setCrossOrigin("anonymous");const photos=[];const raycaster=new THREE.Raycaster();const pointer=new THREE.Vector2();const clock=new THREE.Clock();const countEl=document.getElementById("count");const loading=document.getElementById("loading");const hint=document.getElementById("hint");const zoomHint=document.getElementById("zoomHint");let yawVelocity=.00015,pitchVelocity=0,dragging=false,moved=false,lastX=0,lastY=0,hasInteracted=false,active=null;
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 function randomGaussian(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
-
-function galaxyBackground(){
-  const count=5200,position=new Float32Array(count*3),sizes=new Float32Array(count),colors=new Float32Array(count*3);
-  const c1=new THREE.Color(0xa8b9ff),c2=new THREE.Color(0xffcfe5),c3=new THREE.Color(0xffffff);
-  for(let i=0;i<count;i++){
-    const r=14+Math.pow(Math.random(),.64)*105, arm=(i%5)*(Math.PI*2/5),angle=arm+r*.095+randomGaussian()*.16*(1+r/55);
-    const thickness=randomGaussian()*(1.2+r*.045);
-    const x=Math.cos(angle)*r+randomGaussian()*1.1,y=thickness*.55+Math.sin(r*.025)*.9,z=Math.sin(angle)*r+randomGaussian()*1.1;
-    position[i*3]=x;position[i*3+1]=y;position[i*3+2]=z;sizes[i]=.035+Math.random()*.09;
-    const cc=Math.random()<.13?c2:(Math.random()<.33?c1:c3);colors[i*3]=cc.r;colors[i*3+1]=cc.g;colors[i*3+2]=cc.b;
-  }
-  const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(position,3));g.setAttribute("size",new THREE.BufferAttribute(sizes,1));g.setAttribute("color",new THREE.BufferAttribute(colors,3));
-  const m=new THREE.PointsMaterial({size:.07,vertexColors:true,transparent:true,opacity:.58,depthWrite:false,sizeAttenuation:true,blending:THREE.AdditiveBlending});stars.add(new THREE.Points(g,m));
-  const haze=new THREE.Mesh(new THREE.SphereGeometry(9,48,48),new THREE.MeshBasicMaterial({color:0x4558b8,transparent:true,opacity:.018,side:THREE.BackSide,blending:THREE.AdditiveBlending}));stars.add(haze);
-  const haze2=new THREE.Mesh(new THREE.SphereGeometry(24,48,48),new THREE.MeshBasicMaterial({color:0x9b4b7c,transparent:true,opacity:.009,side:THREE.BackSide,blending:THREE.AdditiveBlending}));stars.add(haze2);
-}
-
-function loadRecords(){return getDocs(collection(db,"memories")).then(s=>s.docs.map(d=>{const x=d.data();const image=x.image||x.imageUrl||x.url||x.photo;return typeof image==="string"&&image.trim()?{id:d.id,image:image.trim()}:null}).filter(Boolean))}
-
-function adaptiveLayout(n){
-  const area=Math.max(innerWidth*innerHeight,1),density=Math.sqrt(n/Math.max(area/900000,.7));
-  const radius=clamp(12.8+Math.sqrt(n)*.72,15.5,29);
-  const base=clamp(3.9-density*.22,2.8,3.85);
-  return {radius,base};
-}
-
-function makePhoto(record,pos,index,total,base){
-  const mat=new THREE.SpriteMaterial({transparent:true,opacity:.82,depthWrite:false,color:0xffffff});
-  const s=new THREE.Sprite(mat);s.position.copy(pos);s.userData={record,base,index,ratio:1};
-  // Preserve the source aspect ratio. Width is calculated only after the image loads.
-  s.scale.set(base,base,1);
-  universe.add(s);photos.push(s);
-  textureLoader.load(record.image,t=>{
-    t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
-    const ratio=clamp((t.image.width||1)/(t.image.height||1),.45,2.5);s.userData.ratio=ratio;s.scale.set(base*ratio,base,1);mat.map=t;mat.needsUpdate=true;
-  },undefined,()=>{mat.opacity=0});
-  return s;
-}
-
-function populate(records){
-  const layout=adaptiveLayout(records.length);
-  // Repeat records only when necessary, but never less than a useful immersive field.
-  const target=Math.max(56,Math.min(240,Math.round(records.length*2.8)));
-  const expanded=[];for(let i=0;i<target;i++)expanded.push(records[i%records.length]);
-  expanded.forEach((record,i)=>{
-    const p=new THREE.Vector3();
-    const phi=Math.acos(1-2*(i+.5)/expanded.length),theta=Math.PI*(3-Math.sqrt(5))*i;
-    const radial=layout.radius+(Math.sin(i*1.73)*.42);
-    p.set(radial*Math.sin(phi)*Math.cos(theta),radial*Math.cos(phi),radial*Math.sin(phi)*Math.sin(theta));
-    makePhoto(record,p,i,expanded.length,layout.base*(.91+.16*((i%7)/6)));
-  });
-  countEl.textContent=`${records.length.toString().padStart(2,"0")} MEMORIES`;
-}
-
-function orientPhotos(){
-  // Every card continuously faces the viewer, while its opacity responds to depth.
-  const inv=new THREE.Quaternion().copy(camera.quaternion).invert();
-  const cameraForward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-  for(const s of photos){
-    s.quaternion.copy(camera.quaternion);
-    const world=s.getWorldPosition(new THREE.Vector3());
-    const d=world.length();
-    const facing=clamp(cameraForward.dot(world.clone().normalize())*.5+.5,0,1);
-    s.material.opacity=.23+facing*.62;
-    const pulse=1+Math.sin(clock.elapsedTime*.42+s.userData.index*.47)*.012;
-    const b=s.userData.base*pulse,r=s.userData.ratio||1;s.scale.set(b*r,b,1);
-  }
-}
-
-function render(){requestAnimationFrame(render);const dt=Math.min(clock.getDelta(),.05);const qYaw=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),yawVelocity*dt*60);const qPitch=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),pitchVelocity*dt*60);universe.quaternion.multiply(qYaw).premultiply(qPitch);yawVelocity*=Math.pow(.93,dt*60);pitchVelocity*=Math.pow(.92,dt*60);yawVelocity=THREE.MathUtils.lerp(yawVelocity,.00014,.01);pitchVelocity=THREE.MathUtils.lerp(pitchVelocity,0,.014);stars.rotation.y+=.00006*dt*60;stars.rotation.x=Math.sin(clock.elapsedTime*.018)*.025;orientPhotos();renderer.render(scene,camera)}
-
-defaultDrag();
-function defaultDrag(){renderer.domElement.addEventListener("pointerdown",e=>{dragging=true;moved=false;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture?.(e.pointerId);document.body.classList.add("dragging");if(!hasInteracted){hasInteracted=true;hint.classList.add("hidden")}});renderer.domElement.addEventListener("pointermove",e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;if(Math.abs(dx)+Math.abs(dy)>2)moved=true;const qy=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-dx*.0025);const qp=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-dy*.0025);universe.quaternion.premultiply(qy).multiply(qp);yawVelocity=dx*.00042;pitchVelocity=dy*.00042;lastX=e.clientX;lastY=e.clientY});renderer.domElement.addEventListener("pointerup",e=>{dragging=false;document.body.classList.remove("dragging");renderer.domElement.releasePointerCapture?.(e.pointerId)});renderer.domElement.addEventListener("pointercancel",()=>{dragging=false;document.body.classList.remove("dragging")});renderer.domElement.addEventListener("wheel",e=>{e.preventDefault();const vertical=clamp(e.deltaY,-180,180)*.00155;const horizontal=clamp(e.deltaX,-180,180)*.0011;universe.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-vertical));universe.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),horizontal));yawVelocity+=horizontal*.06;pitchVelocity+=vertical*.045;if(!hasInteracted){hasInteracted=true;hint.classList.add("hidden")}}, {passive:false});}
-
-function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,2))}window.addEventListener("resize",resize);
-
-galaxyBackground();
-async function init(){try{const records=await loadRecords();if(!records.length)throw new Error("No readable photos were found in the Firestore 'memories' collection.");populate(records);loading.classList.add("hidden");setTimeout(()=>loading.remove(),600);render()}catch(err){console.error(err);loading.classList.add("hidden");document.getElementById("errorText").textContent=`${err?.message||"Firebase read failed."} Check Firestore read rules and the image field in each memory.`;document.getElementById("error").classList.add("show")}}
-init();
-</script>
-</body>
-</html>
+function galaxyBackground(){const count=6500,position=new Float32Array(count*3),sizes=new Float32Array(count),colors=new Float32Array(count*3);const c1=new THREE.Color(0xa8b9ff),c2=new THREE.Color(0xffcfe5),c3=new THREE.Color(0xffffff);for(let i=0;i<count;i++){const r=14+Math.pow(Math.random(),.64)*110,arm=(i%5)*(Math.PI*2/5),angle=arm+r*.095+randomGaussian()*.16*(.25+r/60),thickness=randomGaussian()*(1.2+r*.045),x=Math.cos(angle)*r+randomGaussian()*1.1,y=thickness*.55+Math.sin(r*.025)*.9,z=Math.sin(angle)*r+randomGaussian()*1.1;position[i*3]=x;position[i*3+1]=y;position[i*3+2]=z;sizes[i]=.025+Math.random()*.11;const cc=Math.random()<.13?c2:(Math.random()<.33?c1:c3);colors[i*3]=cc.r;colors[i*3+1]=cc.g;colors[i*3+2]=cc.b}const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(position,3));g.setAttribute("size",new THREE.BufferAttribute(sizes,1));g.setAttribute("color",new THREE.BufferAttribute(colors,3));stars.add(new THREE.Points(g,new THREE.PointsMaterial({size:.075,vertexColors:true,transparent:true,opacity:.58,depthWrite:false,sizeAttenuation:true,blending:THREE.AdditiveBlending})));const haze=new THREE.Mesh(new THREE.SphereGeometry(10,48,48),new THREE.MeshBasicMaterial({color:0x4558b8,transparent:true,opacity:.022,side:THREE.BackSide,blending:THREE.AdditiveBlending}));stars.add(haze);const haze2=new THREE.Mesh(new THREE.SphereGeometry(28,48,48),new THREE.MeshBasicMaterial({color:0x9b4b7c,transparent:true,opacity:.010,side:THREE.BackSide,blending:THREE.AdditiveBlending}));stars.add(haze2)}
+function loadRecords(){return getDocs(collection(db,"memories")).then(s=>s.docs.map(d=>{const x=d.data(),image=x.image||x.imageUrl||x.url||x.photo;return typeof image==="string"&&image.trim()?{id:d.id,image:image.trim()}:null}).filter(Boolean))}
+function adaptiveLayout(n){const area=Math.max(innerWidth*innerHeight,1),density=Math.sqrt(n/Math.max(area/900000,.7));return{radius:clamp(12.8+Math.sqrt(n)*.72,15.5,29),base:clamp(3.9-density*.22,2.8,3.85)}}
+function makePhoto(record,pos,index,base){const mat=new THREE.SpriteMaterial({transparent:true,opacity:.82,depthWrite:false,color:0xffffff});const s=new THREE.Sprite(mat);s.position.copy(pos);s.userData={record,base,index,ratio:1,targetZoom:1,currentZoom:1};s.scale.set(base,base,1);universe.add(s);photos.push(s);textureLoader.load(record.image,t=>{t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);const ratio=clamp((t.image.width||1)/(t.image.height||1),.45,2.8);s.userData.ratio=ratio;mat.map=t;mat.needsUpdate=true},undefined,()=>{mat.opacity=0});return s}
+function populate(records){const layout=adaptiveLayout(records.length);const target=Math.max(56,Math.min(300,Math.round(records.length*3.2)));const expanded=[];for(let i=0;i<target;i++)expanded.push(records[i%records.length]);expanded.forEach((record,i)=>{const p=new THREE.Vector3();const phi=Math.acos(1-2*(i+.5)/expanded.length),theta=Math.PI*(3-Math.sqrt(5))*i;const radial=layout.radius+Math.sin(i*1.73)*.45;p.set(radial*Math.sin(phi)*Math.cos(theta),radial*Math.cos(phi),radial*Math.sin(phi)*Math.sin(theta));makePhoto(record,p,i,layout.base*(.91+.16*((i%7)/6)))});countEl.textContent=`${records.length.toString().padStart(2,"0")} MEMORIES`}
+function orientPhotos(){const cameraForward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);for(const s of photos){s.quaternion.copy(camera.quaternion);const world=s.getWorldPosition(new THREE.Vector3()),d=world.length(),facing=clamp(cameraForward.dot(world.clone().normalize())*.5+.5,0,1);s.material.opacity=Math.min(1,(.20+facing*.68)*(s.userData.targetZoom>1?1.08:1));const p=1+Math.sin(clock.elapsedTime*.42+s.userData.index*.47)*.012;const b=s.userData.base*p*(s.userData.currentZoom||1),r=s.userData.ratio||1;s.scale.set(b*r,b,1)}}
+function zoomPhoto(photo){if(active===photo){photo.userData.targetZoom=1;zoomHint.classList.remove("show");active=null;return}if(active)active.userData.targetZoom=1;active=photo;photo.userData.targetZoom=2.45;zoomHint.classList.add("show");setTimeout(()=>{if(active===photo)zoomHint.classList.remove("show")},1900)}
+function render(){requestAnimationFrame(render);const dt=Math.min(clock.getDelta(),.05);universe.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),yawVelocity*dt*60)).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),pitchVelocity*dt*60));yawVelocity*=Math.pow(.93,dt*60);pitchVelocity*=Math.pow(.92,dt*60);yawVelocity=THREE.MathUtils.lerp(yawVelocity,.00014,.01);pitchVelocity=THREE.MathUtils.lerp(pitchVelocity,0,.014);stars.rotation.y+=.00006*dt*60;stars.rotation.x=Math.sin(clock.elapsedTime*.018)*.025;for(const s of photos)s.userData.currentZoom=THREE.MathUtils.lerp(s.userData.currentZoom||1,s.userData.targetZoom||1,.085);orientPhotos();renderer.render(scene,camera)}
+renderer.domElement.addEventListener("pointerdown",e=>{dragging=true;moved=false;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture?.(e.pointerId);document.body.classList.add("dragging");if(!hasInteracted){hasInteracted=true;hint.classList.add("hidden")}});
+renderer.domElement.addEventListener("pointermove",e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;if(Math.abs(dx)+Math.abs(dy)>2)moved=true;universe.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-dx*.0025)).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-dy*.0025));yawVelocity=dx*.00042;pitchVelocity=dy*.00042;lastX=e.clientX;lastY=e.clientY});
+renderer.domElement.addEventListener("pointerup",e=>{dragging=false;document.body.classList.remove("dragging");renderer.domElement.releasePointerCapture?.(e.pointerId);if(!moved){pointer.x=e.clientX/innerWidth*2-1;pointer.y=-(e.clientY/innerHeight)*2+1;raycaster.setFromCamera(pointer,camera);const hit=raycaster.intersectObjects(photos,false)[0];if(hit)zoomPhoto(hit.object)}});
+renderer.domElement.addEventListener("pointercancel",()=>{dragging=false;document.body.classList.remove("dragging")});
+renderer.domElement.addEventListener("wheel",e=>{e.preventDefault();const vertical=clamp(e.deltaY,-180,180)*.00155,horizontal=clamp(e.deltaX,-180,180)*.0011;universe.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-vertical)).premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),horizontal));yawVelocity+=horizontal*.06;pitchVelocity+=vertical*.045;if(!hasInteracted){hasInteracted=true;hint.classList.add("hidden")}}, {passive:false});
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,2))}window.addEventListener("resize",resize);galaxyBackground();
+async function init(){try{const records=await loadRecords();if(!records.length)throw new Error("No readable photos were found in the Firestore 'memories' collection.");populate(records);loading.classList.add("hidden");setTimeout(()=>loading.remove(),600);render()}catch(err){console.error(err);loading.classList.add("hidden");document.getElementById("errorText").textContent=`${err?.message||"Firebase read failed."} Check Firestore read rules and the image field in each memory.`;document.getElementById("error").classList.add("show")}}init();
+</script></body></html>
