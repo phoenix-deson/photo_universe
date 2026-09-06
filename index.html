@@ -1,293 +1,127 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#04050a" />
-  <meta name="description" content="Photo Universe — an immersive, read-only memory galaxy powered by Firebase." />
-  <title>Photo Universe</title>
-  <style>
-    :root{color-scheme:dark;--bg:#04050a;--fg:rgba(255,255,255,.9);--muted:rgba(255,255,255,.34)}
-    *{box-sizing:border-box}
-    html,body{width:100%;height:100%;margin:0;overflow:hidden}
-    body{background:var(--bg);color:var(--fg);font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;user-select:none;cursor:grab}
-    body.dragging{cursor:grabbing}
-    #app,canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-    .atmosphere{position:fixed;inset:0;pointer-events:none;z-index:2;mix-blend-mode:screen;opacity:.75}
-    .vignette{position:fixed;inset:0;pointer-events:none;z-index:3;background:radial-gradient(circle at center,transparent 32%,rgba(0,0,0,.16) 62%,rgba(0,0,0,.72) 100%)}
-    .grain{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:.055;mix-blend-mode:screen;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E")}
-    .ui{position:fixed;inset:0;z-index:6;pointer-events:none;padding:26px 28px}
-    .brand{pointer-events:auto;display:flex;align-items:center;gap:11px;width:max-content;padding:10px 14px 10px 11px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(4,6,10,.34);backdrop-filter:blur(18px) saturate(135%);-webkit-backdrop-filter:blur(18px) saturate(135%);box-shadow:0 16px 48px rgba(0,0,0,.18)}
-    .mark{width:22px;height:22px;border-radius:50%;position:relative;background:radial-gradient(circle at 32% 28%,#fff 0 9%,rgba(255,255,255,.62) 18%,rgba(255,255,255,.08) 50%,transparent 71%);box-shadow:0 0 24px rgba(255,255,255,.09)}
-    .mark:after{content:"";position:absolute;inset:4px;border:1px solid rgba(255,255,255,.42);border-radius:50%}
-    .title{font-size:12px;line-height:1;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.8)}
-    .count{position:fixed;right:28px;top:31px;font-size:10px;letter-spacing:.18em;color:rgba(255,255,255,.3);font-variant-numeric:tabular-nums}
-    .hint{position:fixed;left:50%;bottom:28px;translate:-50% 0;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap;transition:opacity .55s ease,transform .55s ease}
-    .hint.hidden{opacity:0;transform:translateY(8px)}
-    .loading{position:fixed;left:50%;top:50%;translate:-50% -50%;display:grid;place-items:center;gap:14px;color:rgba(255,255,255,.55);font-size:12px;letter-spacing:.06em;transition:opacity .5s ease}
-    .loading.hidden{opacity:0}
-    .spinner{width:30px;height:30px;border:1px solid rgba(255,255,255,.13);border-top-color:rgba(255,255,255,.75);border-radius:50%;animation:spin 1s linear infinite}
-    @keyframes spin{to{rotate:360deg}}
-    .error{position:fixed;left:50%;top:50%;translate:-50% -50%;width:min(560px,calc(100vw - 40px));padding:24px;border:1px solid rgba(255,255,255,.1);border-radius:20px;background:rgba(10,12,18,.72);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 30px 90px rgba(0,0,0,.35);display:none}
-    .error.show{display:block}.error h2{font-size:15px;font-weight:500;margin:0 0 8px}.error p{font-size:12px;line-height:1.7;color:rgba(255,255,255,.46);margin:0}
-    @media(max-width:700px){.ui{padding:16px}.count{top:22px;right:16px}.brand{padding:9px 12px 9px 9px}.title{font-size:10px}.hint{bottom:19px;font-size:8px;letter-spacing:.11em}}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#02030a">
+<meta name="description" content="Photo Universe — an immersive 3D galaxy of memories.">
+<title>Photo Universe</title>
+<style>
+:root{color-scheme:dark;--bg:#02030a;--fg:rgba(255,255,255,.92)}*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#02030a}body{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;color:var(--fg);cursor:grab;user-select:none;-webkit-font-smoothing:antialiased}body.dragging{cursor:grabbing}canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}.ui{position:fixed;inset:0;z-index:5;pointer-events:none;padding:24px 26px;display:flex;justify-content:space-between;align-items:flex-start}.brand{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:9px 13px 9px 10px;border:1px solid rgba(255,255,255,.09);border-radius:999px;background:rgba(5,7,15,.28);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.mark{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 34% 28%,#fff 0 10%,rgba(255,255,255,.55) 23%,rgba(255,255,255,.08) 54%,transparent 72%);box-shadow:0 0 18px rgba(160,190,255,.16)}.brand span{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.72)}.count{font-size:10px;letter-spacing:.18em;color:rgba(255,255,255,.28);padding:10px 0}.hint{position:fixed;left:50%;bottom:24px;translate:-50% 0;color:rgba(255,255,255,.32);font-size:10px;letter-spacing:.13em;text-transform:uppercase;transition:opacity .5s,transform .5s;white-space:nowrap}.hint.hidden{opacity:0;transform:translateY(7px)}.loading{position:fixed;left:50%;top:50%;translate:-50% -50%;z-index:6;display:grid;place-items:center;gap:14px;color:rgba(255,255,255,.58);font-size:12px;letter-spacing:.08em}.loading.hidden{opacity:0;pointer-events:none;transition:opacity .45s}.spinner{width:28px;height:28px;border:1px solid rgba(255,255,255,.14);border-top-color:rgba(255,255,255,.82);border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.error{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;display:none;max-width:min(580px,calc(100vw - 40px));padding:22px 24px;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:rgba(8,10,18,.76);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 20px 70px rgba(0,0,0,.4)}.error.show{display:block}.error h2{font-size:15px;font-weight:500;margin:0 0 8px}.error p{font-size:12px;line-height:1.7;color:rgba(255,255,255,.5);margin:0}@media(max-width:700px){.ui{padding:16px}.brand{padding:8px 11px 8px 9px}.brand span{font-size:10px}.count{font-size:9px}.hint{bottom:18px;font-size:8px}}
+</style>
 </head>
 <body>
-  <div id="app"></div>
-  <div class="atmosphere"></div>
-  <div class="vignette"></div>
-  <div class="grain"></div>
-  <div class="ui">
-    <div class="brand"><span class="mark"></span><span class="title">Photo Universe</span></div>
-    <div id="count" class="count">— MEMORIES</div>
-    <div id="hint" class="hint">Drag to drift · Scroll to travel</div>
-    <div id="loading" class="loading"><div class="spinner"></div><div>Entering the universe</div></div>
-    <div id="error" class="error"><h2>Unable to enter the universe</h2><p id="errorText"></p></div>
-  </div>
+<div id="app"></div>
+<div class="ui"><div class="brand"><div class="mark"></div><span>Photo Universe</span></div><div id="count" class="count">—</div></div>
+<div id="loading" class="loading"><div class="spinner"></div><div>ENTERING THE UNIVERSE</div></div>
+<div id="hint" class="hint">DRAG TO EXPLORE · SCROLL TO TRAVEL</div>
+<div id="error" class="error"><h2>Unable to load the photo universe</h2><p id="errorText"></p></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from "three";
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import {getFirestore,collection,getDocs} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-  <script type="importmap">
-    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}
-  </script>
+const firebaseConfig={apiKey:"AIzaSyDIeaAVvLD9d4L9QAvbTLCZ6N0x0-U1Nwg",authDomain:"friendship-k-h.firebaseapp.com",projectId:"friendship-k-h",storageBucket:"friendship-k-h.firebasestorage.app",messagingSenderId:"791706318386",appId:"1:791706318386:web:5d69e67fb55716ba8e2e2b"};
+const db=getFirestore(initializeApp(firebaseConfig));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x02030a);
+scene.fog=new THREE.FogExp2(0x02030a,.004);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,180);
+camera.position.set(0,0,0);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;document.getElementById("app").appendChild(renderer.domElement);
 
-  <script type="module">
-    import * as THREE from "three";
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+const universe=new THREE.Group();scene.add(universe);
+const stars=new THREE.Group();scene.add(stars);
+const textureLoader=new THREE.TextureLoader();textureLoader.setCrossOrigin("anonymous");
+const photos=[];
+const raycaster=new THREE.Raycaster();const pointer=new THREE.Vector2();
+const clock=new THREE.Clock();
+const countEl=document.getElementById("count");const loading=document.getElementById("loading");const hint=document.getElementById("hint");
+let yaw=0,pitch=0,yawVelocity=.00015,pitchVelocity=0,dragging=false,moved=false,lastX=0,lastY=0,hasInteracted=false,active=null;
 
-    const firebaseConfig = {
-      apiKey:"AIzaSyDIeaAVvLD9d4L9QAvbTLCZ6N0x0-U1Nwg",
-      authDomain:"friendship-k-h.firebaseapp.com",
-      projectId:"friendship-k-h",
-      storageBucket:"friendship-k-h.firebasestorage.app",
-      messagingSenderId:"791706318386",
-      appId:"1:791706318386:web:5d69e67fb55716ba8e2e2b"
-    };
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+function randomGaussian(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
 
-    const firebaseApp=initializeApp(firebaseConfig);
-    const db=getFirestore(firebaseApp);
+function galaxyBackground(){
+  const count=5200,position=new Float32Array(count*3),sizes=new Float32Array(count),colors=new Float32Array(count*3);
+  const c1=new THREE.Color(0xa8b9ff),c2=new THREE.Color(0xffcfe5),c3=new THREE.Color(0xffffff);
+  for(let i=0;i<count;i++){
+    const r=14+Math.pow(Math.random(),.64)*105, arm=(i%5)*(Math.PI*2/5),angle=arm+r*.095+randomGaussian()*.16*(1+r/55);
+    const thickness=randomGaussian()*(1.2+r*.045);
+    const x=Math.cos(angle)*r+randomGaussian()*1.1,y=thickness*.55+Math.sin(r*.025)*.9,z=Math.sin(angle)*r+randomGaussian()*1.1;
+    position[i*3]=x;position[i*3+1]=y;position[i*3+2]=z;sizes[i]=.035+Math.random()*.09;
+    const cc=Math.random()<.13?c2:(Math.random()<.33?c1:c3);colors[i*3]=cc.r;colors[i*3+1]=cc.g;colors[i*3+2]=cc.b;
+  }
+  const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(position,3));g.setAttribute("size",new THREE.BufferAttribute(sizes,1));g.setAttribute("color",new THREE.BufferAttribute(colors,3));
+  const m=new THREE.PointsMaterial({size:.07,vertexColors:true,transparent:true,opacity:.58,depthWrite:false,sizeAttenuation:true,blending:THREE.AdditiveBlending});stars.add(new THREE.Points(g,m));
+  const haze=new THREE.Mesh(new THREE.SphereGeometry(9,48,48),new THREE.MeshBasicMaterial({color:0x4558b8,transparent:true,opacity:.018,side:THREE.BackSide,blending:THREE.AdditiveBlending}));stars.add(haze);
+  const haze2=new THREE.Mesh(new THREE.SphereGeometry(24,48,48),new THREE.MeshBasicMaterial({color:0x9b4b7c,transparent:true,opacity:.009,side:THREE.BackSide,blending:THREE.AdditiveBlending}));stars.add(haze2);
+}
 
-    const scene=new THREE.Scene();
-    scene.background=new THREE.Color(0x04050a);
-    scene.fog=new THREE.FogExp2(0x04050a,.0065);
+function loadRecords(){return getDocs(collection(db,"memories")).then(s=>s.docs.map(d=>{const x=d.data();const image=x.image||x.imageUrl||x.url||x.photo;return typeof image==="string"&&image.trim()?{id:d.id,image:image.trim()}:null}).filter(Boolean))}
 
-    const camera=new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.05,140);
-    camera.position.set(0,0,0);
+function adaptiveLayout(n){
+  const area=Math.max(innerWidth*innerHeight,1),density=Math.sqrt(n/Math.max(area/900000,.7));
+  const radius=clamp(12.8+Math.sqrt(n)*.72,15.5,29);
+  const base=clamp(3.9-density*.22,2.8,3.85);
+  return {radius,base};
+}
 
-    const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
-    renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
-    renderer.setSize(innerWidth,innerHeight);
-    renderer.outputColorSpace=THREE.SRGBColorSpace;
-    renderer.toneMapping=THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure=1.12;
-    document.getElementById("app").appendChild(renderer.domElement);
+function makePhoto(record,pos,index,total,base){
+  const mat=new THREE.SpriteMaterial({transparent:true,opacity:.82,depthWrite:false,color:0xffffff});
+  const s=new THREE.Sprite(mat);s.position.copy(pos);s.userData={record,base,index,ratio:1};
+  // Preserve the source aspect ratio. Width is calculated only after the image loads.
+  s.scale.set(base,base,1);
+  universe.add(s);photos.push(s);
+  textureLoader.load(record.image,t=>{
+    t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
+    const ratio=clamp((t.image.width||1)/(t.image.height||1),.45,2.5);s.userData.ratio=ratio;s.scale.set(base*ratio,base,1);mat.map=t;mat.needsUpdate=true;
+  },undefined,()=>{mat.opacity=0});
+  return s;
+}
 
-    const universe=new THREE.Group();
-    scene.add(universe);
+function populate(records){
+  const layout=adaptiveLayout(records.length);
+  // Repeat records only when necessary, but never less than a useful immersive field.
+  const target=Math.max(56,Math.min(240,Math.round(records.length*2.8)));
+  const expanded=[];for(let i=0;i<target;i++)expanded.push(records[i%records.length]);
+  expanded.forEach((record,i)=>{
+    const p=new THREE.Vector3();
+    const phi=Math.acos(1-2*(i+.5)/expanded.length),theta=Math.PI*(3-Math.sqrt(5))*i;
+    const radial=layout.radius+(Math.sin(i*1.73)*.42);
+    p.set(radial*Math.sin(phi)*Math.cos(theta),radial*Math.cos(phi),radial*Math.sin(phi)*Math.sin(theta));
+    makePhoto(record,p,i,expanded.length,layout.base*(.91+.16*((i%7)/6)));
+  });
+  countEl.textContent=`${records.length.toString().padStart(2,"0")} MEMORIES`;
+}
 
-    const textureLoader=new THREE.TextureLoader();
-    textureLoader.setCrossOrigin("anonymous");
-    const photos=[];
+function orientPhotos(){
+  // Every card continuously faces the viewer, while its opacity responds to depth.
+  const inv=new THREE.Quaternion().copy(camera.quaternion).invert();
+  const cameraForward=new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+  for(const s of photos){
+    s.quaternion.copy(camera.quaternion);
+    const world=s.getWorldPosition(new THREE.Vector3());
+    const d=world.length();
+    const facing=clamp(cameraForward.dot(world.clone().normalize())*.5+.5,0,1);
+    s.material.opacity=.23+facing*.62;
+    const pulse=1+Math.sin(clock.elapsedTime*.42+s.userData.index*.47)*.012;
+    const b=s.userData.base*pulse,r=s.userData.ratio||1;s.scale.set(b*r,b,1);
+  }
+}
 
-    const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
-    const lerp=(a,b,t)=>a+(b-a)*t;
-    const tmp=new THREE.Vector3();
+function render(){requestAnimationFrame(render);const dt=Math.min(clock.getDelta(),.05);const qYaw=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),yawVelocity*dt*60);const qPitch=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),pitchVelocity*dt*60);universe.quaternion.multiply(qYaw).premultiply(qPitch);yawVelocity*=Math.pow(.93,dt*60);pitchVelocity*=Math.pow(.92,dt*60);yawVelocity=THREE.MathUtils.lerp(yawVelocity,.00014,.01);pitchVelocity=THREE.MathUtils.lerp(pitchVelocity,0,.014);stars.rotation.y+=.00006*dt*60;stars.rotation.x=Math.sin(clock.elapsedTime*.018)*.025;orientPhotos();renderer.render(scene,camera)}
 
-    function fibonacciPoint(i,total,radius){
-      const y=1-(i/(Math.max(1,total-1)))*2;
-      const ring=Math.sqrt(Math.max(0,1-y*y));
-      const theta=Math.PI*(3-Math.sqrt(5))*i;
-      return new THREE.Vector3(radius*ring*Math.cos(theta),radius*y,radius*ring*Math.sin(theta));
-    }
+defaultDrag();
+function defaultDrag(){renderer.domElement.addEventListener("pointerdown",e=>{dragging=true;moved=false;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture?.(e.pointerId);document.body.classList.add("dragging");if(!hasInteracted){hasInteracted=true;hint.classList.add("hidden")}});renderer.domElement.addEventListener("pointermove",e=>{if(!dragging)return;const dx=e.clientX-lastX,dy=e.clientY-lastY;if(Math.abs(dx)+Math.abs(dy)>2)moved=true;const qy=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-dx*.0025);const qp=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-dy*.0025);universe.quaternion.premultiply(qy).multiply(qp);yawVelocity=dx*.00042;pitchVelocity=dy*.00042;lastX=e.clientX;lastY=e.clientY});renderer.domElement.addEventListener("pointerup",e=>{dragging=false;document.body.classList.remove("dragging");renderer.domElement.releasePointerCapture?.(e.pointerId)});renderer.domElement.addEventListener("pointercancel",()=>{dragging=false;document.body.classList.remove("dragging")});renderer.domElement.addEventListener("wheel",e=>{e.preventDefault();const vertical=clamp(e.deltaY,-180,180)*.00155;const horizontal=clamp(e.deltaX,-180,180)*.0011;universe.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-vertical));universe.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),horizontal));yawVelocity+=horizontal*.06;pitchVelocity+=vertical*.045;if(!hasInteracted){hasInteracted=true;hint.classList.add("hidden")}}, {passive:false});}
 
-    function normalizeRecord(id,data){
-      const image=data.image||data.imageUrl||data.url||data.photo;
-      if(typeof image!=="string"||!image.trim()) return null;
-      const timestamp=typeof data.timestamp==="number"?data.timestamp:(data.timestamp?.toMillis?.()||Date.parse(data.timestamp||"")||0);
-      return {id,image:image.trim(),timestamp};
-    }
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,2))}window.addEventListener("resize",resize);
 
-    async function loadPhotos(){
-      const snap=await getDocs(collection(db,"memories"));
-      return snap.docs.map(d=>normalizeRecord(d.id,d.data())).filter(Boolean).sort((a,b)=>b.timestamp-a.timestamp);
-    }
-
-    function makeGlowTexture(){
-      const c=document.createElement("canvas");c.width=c.height=256;
-      const x=c.getContext("2d");
-      const g=x.createRadialGradient(128,128,0,128,128,128);
-      g.addColorStop(0,"rgba(255,255,255,.26)");g.addColorStop(.16,"rgba(192,211,255,.09)");g.addColorStop(.48,"rgba(112,144,255,.025)");g.addColorStop(1,"rgba(0,0,0,0)");
-      x.fillStyle=g;x.fillRect(0,0,256,256);
-      return new THREE.CanvasTexture(c);
-    }
-
-    function addNebula(position,scale,opacity,rotation){
-      const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:makeGlowTexture(),transparent:true,opacity,depthWrite:false,blending:THREE.AdditiveBlending}));
-      sprite.position.copy(position);sprite.scale.set(scale,scale*.55,1);sprite.material.rotation=rotation;scene.add(sprite);
-    }
-
-    function addGalaxy(){
-      const starCount=950;
-      const positions=new Float32Array(starCount*3);
-      const sizes=new Float32Array(starCount);
-      for(let i=0;i<starCount;i++){
-        const radius=35+Math.pow(Math.random(),.52)*42;
-        const u=Math.random()*2-1;
-        const a=Math.random()*Math.PI*2;
-        const s=Math.sqrt(1-u*u);
-        positions[i*3]=radius*s*Math.cos(a);
-        positions[i*3+1]=radius*u*.72;
-        positions[i*3+2]=radius*s*Math.sin(a);
-        sizes[i]=.025+Math.random()*.09;
-      }
-      const geometry=new THREE.BufferGeometry();
-      geometry.setAttribute("position",new THREE.BufferAttribute(positions,3));
-      geometry.setAttribute("aSize",new THREE.BufferAttribute(sizes,1));
-      const material=new THREE.PointsMaterial({color:0xffffff,size:.055,transparent:true,opacity:.5,depthWrite:false,sizeAttenuation:true});
-      scene.add(new THREE.Points(geometry,material));
-
-      const milkyCount=520;
-      const milky=new Float32Array(milkyCount*3);
-      for(let i=0;i<milkyCount;i++){
-        const radius=30+Math.random()*48;
-        const angle=Math.random()*Math.PI*2;
-        const spread=(Math.random()-.5)*5.5*(.25+radius/58);
-        milky[i*3]=Math.cos(angle)*radius;
-        milky[i*3+1]=spread;
-        milky[i*3+2]=Math.sin(angle)*radius;
-      }
-      const mg=new THREE.BufferGeometry();mg.setAttribute("position",new THREE.BufferAttribute(milky,3));
-      scene.add(new THREE.Points(mg,new THREE.PointsMaterial({color:0xb9c8ff,size:.08,transparent:true,opacity:.18,depthWrite:false,sizeAttenuation:true})));
-
-      addNebula(new THREE.Vector3(-29,11,-43),30,.09,-.32);
-      addNebula(new THREE.Vector3(35,-18,-58),36,.07,.22);
-      addNebula(new THREE.Vector3(-35,-23,24),24,.05,.72);
-    }
-
-    function adaptiveLayout(count){
-      const area=Math.max(innerWidth*innerHeight,1);
-      const density=Math.sqrt(count/Math.max(area/1000000,.7));
-      const radius=clamp(12.5+Math.sqrt(count)*1.0,15,32);
-      const target=clamp(3.2-density*.13,2.25,3.15);
-      return {radius,target};
-    }
-
-    function createPhoto(record,point,index,total,targetScale){
-      const material=new THREE.SpriteMaterial({transparent:true,opacity:.66,depthWrite:false,color:0xffffff,fog:true});
-      const sprite=new THREE.Sprite(material);
-      const size=targetScale*(.9+(.1*Math.sin(index*1.91)));
-      sprite.scale.set(size*1.55,size,1);
-      sprite.position.copy(point);
-      sprite.userData.baseSize=size;
-      universe.add(sprite);photos.push(sprite);
-
-      textureLoader.load(record.image,texture=>{
-        texture.colorSpace=THREE.SRGBColorSpace;
-        texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
-        const ratio=clamp((texture.image.width||1)/(texture.image.height||1),.62,2.15);
-        const visualRatio=Math.max(1.34,ratio);
-        sprite.scale.set(size*visualRatio,size,1);
-        material.map=texture;material.needsUpdate=true;
-      },undefined,()=>{material.opacity=0});
-    }
-
-    function populate(records){
-      const {radius,target}=adaptiveLayout(records.length);
-      records.forEach((record,i)=>createPhoto(record,fibonacciPoint(i,records.length,radius),i,records.length,target));
-      document.getElementById("count").textContent=`${String(records.length).padStart(2,"0")} MEMORIES`;
-    }
-
-    // Quaternion-based trackball rotation: there is no north/south clamp or scroll boundary.
-    const dragQuat=new THREE.Quaternion();
-    const axisY=new THREE.Vector3(0,1,0);
-    const axisX=new THREE.Vector3(1,0,0);
-    let dragVelocity=new THREE.Vector2(.00022,.00034);
-    let pointerDown=false,moved=false,lastX=0,lastY=0,hasInteracted=false;
-    let autoSpin=.00018;
-    const hint=document.getElementById("hint");
-
-    renderer.domElement.addEventListener("pointerdown",e=>{
-      pointerDown=true;moved=false;lastX=e.clientX;lastY=e.clientY;
-      renderer.domElement.setPointerCapture?.(e.pointerId);document.body.classList.add("dragging");
-      if(!hasInteracted){hasInteracted=true;hint.classList.add("hidden")}
-    });
-
-    renderer.domElement.addEventListener("pointermove",e=>{
-      if(!pointerDown)return;
-      const dx=e.clientX-lastX,dy=e.clientY-lastY;
-      if(Math.abs(dx)+Math.abs(dy)>2)moved=true;
-      const yaw=new THREE.Quaternion().setFromAxisAngle(axisY,-dx*.00215);
-      const pitch=new THREE.Quaternion().setFromAxisAngle(axisX,-dy*.00215);
-      universe.quaternion.premultiply(yaw).premultiply(pitch);
-      dragVelocity.set(dx*.00035,dy*.00035);
-      lastX=e.clientX;lastY=e.clientY;
-    });
-
-    renderer.domElement.addEventListener("pointerup",e=>{
-      pointerDown=false;document.body.classList.remove("dragging");renderer.domElement.releasePointerCapture?.(e.pointerId);
-    });
-    renderer.domElement.addEventListener("pointercancel",()=>{pointerDown=false;document.body.classList.remove("dragging")});
-
-    renderer.domElement.addEventListener("wheel",e=>{
-      e.preventDefault();
-      const amount=clamp(e.deltaY,-140,140)*.0032;
-      const q=new THREE.Quaternion().setFromAxisAngle(axisX,-amount);
-      universe.quaternion.premultiply(q);
-      const side=new THREE.Quaternion().setFromAxisAngle(axisY,e.deltaX*.0022);
-      universe.quaternion.premultiply(side);
-      if(!hasInteracted){hasInteracted=true;hint.classList.add("hidden")}
-    },{passive:false});
-
-    const clock=new THREE.Clock();
-    function animate(){
-      requestAnimationFrame(animate);
-      const dt=Math.min(clock.getDelta(),.05);
-      if(!pointerDown){
-        const idle=new THREE.Quaternion().setFromAxisAngle(axisY,autoSpin*dt*60);
-        const drift=new THREE.Quaternion().setFromAxisAngle(axisX,dragVelocity.y*dt*26);
-        const side=new THREE.Quaternion().setFromAxisAngle(axisY,dragVelocity.x*dt*26);
-        universe.quaternion.premultiply(idle).premultiply(drift).premultiply(side);
-        dragVelocity.multiplyScalar(Math.pow(.93,dt*60));
-      } else {
-        dragVelocity.multiplyScalar(.94);
-      }
-      autoSpin=lerp(autoSpin,.00018,.012);
-
-      // Let the photo field breathe subtly instead of moving on a hard geometric axis.
-      const time=clock.elapsedTime;
-      for(let i=0;i<photos.length;i++){
-        const s=photos[i];
-        const base=s.userData.baseSize;
-        const pulse=1+Math.sin(time*.34+i*.37)*.018;
-        s.scale.x*=0.995;
-        s.scale.y=lerp(s.scale.y,base*pulse,.018);
-        s.scale.x=lerp(s.scale.x,s.userData.currentRatio?base*pulse*s.userData.currentRatio:base*pulse*1.55,.018);
-      }
-      renderer.render(scene,camera);
-    }
-
-    function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,2))}
-    addGalaxy();
-    addNebula(new THREE.Vector3(0,0,-28),44,.045,0);
-    addNebula(new THREE.Vector3(18,22,-52),26,.035,.4);
-    window.addEventListener("resize",resize);
-
-    async function init(){
-      try{
-        const records=await loadPhotos();
-        if(!records.length)throw new Error("No readable photos were found in the Firestore 'memories' collection.");
-        populate(records);
-        document.getElementById("loading").classList.add("hidden");
-        setTimeout(()=>document.getElementById("loading")?.remove(),650);
-        animate();
-      }catch(err){
-        console.error(err);
-        document.getElementById("loading").classList.add("hidden");
-        document.getElementById("errorText").textContent=`${err?.message||"Firebase read failed."} Make sure Firestore allows read access and each memory contains an image field.`;
-        document.getElementById("error").classList.add("show");
-      }
-    }
-    init();
-  </script>
+galaxyBackground();
+async function init(){try{const records=await loadRecords();if(!records.length)throw new Error("No readable photos were found in the Firestore 'memories' collection.");populate(records);loading.classList.add("hidden");setTimeout(()=>loading.remove(),600);render()}catch(err){console.error(err);loading.classList.add("hidden");document.getElementById("errorText").textContent=`${err?.message||"Firebase read failed."} Check Firestore read rules and the image field in each memory.`;document.getElementById("error").classList.add("show")}}
+init();
+</script>
 </body>
 </html>
